@@ -13,6 +13,24 @@ type SendingStrategy int
 const SESSION SendingStrategy = 1
 const VENDOR SendingStrategy = 2
 
+const (
+    CONTENT_ENCODING = "content-transfer-encoding"
+    CONTENT_TYPE     = "content-type"
+    REPLY_TO         = "reply-to"
+    SUBJECT          = "subject"
+    ZIPWHIP_AUTH     = "zipwhip-auth"
+    FROM             = "from"
+)
+
+var ParsingTable = map[string]bool {
+    FROM: true,
+    SUBJECT: true,
+    CONTENT_ENCODING: true,
+    CONTENT_TYPE: true,
+    REPLY_TO: true,
+    ZIPWHIP_AUTH: true,
+}
+
 type SendRequest struct {
 	Key        []byte
 	Sender     mail.Address
@@ -59,10 +77,15 @@ func (sr *SendRequest) AddHeaders(headers []byte) error {
 
 	headerArray := bytes.Split(headers, []byte("\n"))
 
-	sr.Headers = make(map[string][]byte, len(headerArray))
+	sr.Headers = make(map[string][]byte, len(ParsingTable))
 
 	for i := 0; i < len(headerArray); i++ {
 		header := bytes.SplitN(headerArray[i], []byte(":"), 2)
+        header[KEY] = bytes.ToLower(header[KEY])
+        go log.Debugf("%s", header)
+        if _,ok := ParsingTable[string(header[KEY])]; !ok {
+            continue
+        }
 		if len(header[VALUE]) > 0 {
 			sr.Headers[string(bytes.ToLower(header[KEY]))] = bytes.TrimSpace(header[VALUE])
 		}

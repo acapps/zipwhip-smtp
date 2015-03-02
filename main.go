@@ -88,6 +88,7 @@ func main() {
 
 		Handler: func(peer smtpd.Peer, env smtpd.Envelope) error {
 
+			go log.Debugf("New connection: %+s, %+s", peer, env)
 			parseRequest(peer, env)
 			return nil
 		},
@@ -139,9 +140,9 @@ func parseMessage(body []byte, sendRequest *request.SendRequest) error {
 	)
 	// Headers and Body separated by '\n\n'
 	// All other instances are assumed as part of the body.
-	headersAndBody := bytes.SplitN(body, []byte("\n\n"), 2)
+	headersAndBody := bytes.Split(body, []byte("\n\n"))
 
-	if len(headersAndBody) != 2 {
+	if len(headersAndBody) < 2 {
 		go log.Debugf("Not enough segments, %d", len(headersAndBody))
 		return fmt.Errorf("Improperly formatted message.")
 	}

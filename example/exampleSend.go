@@ -17,7 +17,8 @@ func encodeRFC2047(String string) string {
 
 func main() {
 	// Set up authentication information.
-	smtpServer := "127.0.0.1"
+//	smtpServer := "192.241.204.134"
+    smtpServer := "127.0.0.1"
 	auth := smtp.PlainAuth(
 		"",
 		"",
@@ -46,7 +47,8 @@ func main() {
 	// Connect to the server, authenticate, set the sender and recipient,
 	// and send the email all in one step.
 	err := smtp.SendMail(
-		smtpServer+":10025",
+		//smtpServer+":25",
+        smtpServer+":10025",
 		auth,
 		from.Address,
 		[]string{to.Address},
