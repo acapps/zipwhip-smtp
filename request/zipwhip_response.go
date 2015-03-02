@@ -24,15 +24,17 @@ type SessionResponse struct {
 }
 
 func (vr *VendorResponse) ParseJson(inputJson *[]byte) error {
+
     return json.Unmarshal(*inputJson, vr)
 }
 
 func (sr *SessionResponse) ParseJson(inputJson *[]byte) error {
+
     return json.Unmarshal(*inputJson, sr)
 }
 
 func (vr *VendorResponse) parseVendorResponse(body *[]byte, sr *SendRequest) error {
-    var vr VendorResponse
+
     err := vr.ParseJson(body)
     if err != nil {
         return fmt.Errorf("An error occurred while parsing Vendor response: %s", body)
@@ -42,7 +44,7 @@ func (vr *VendorResponse) parseVendorResponse(body *[]byte, sr *SendRequest) err
 }
 
 func (sr *SessionResponse) parseSessionResponse(body *[]byte, request *SendRequest) error {
-    var sr SessionResponse
+
     err := sr.ParseJson(body)
     if err != nil {
         return fmt.Errorf("An error occurred while parsing Vendor response: %s", body)
