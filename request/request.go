@@ -3,10 +3,10 @@ package request
 import (
 	"bytes"
 	"encoding/base64"
-
-    "github.com/asaskevich/govalidator"
+	"github.com/asaskevich/govalidator"
 	log "github.com/sirupsen/logrus"
-    "net/mail")
+	"net/mail"
+)
 
 type SendingStrategy int
 
@@ -15,12 +15,13 @@ const VENDOR SendingStrategy = 2
 
 type SendRequest struct {
 	Key        []byte
-    Sender     mail.Address
-    Strategy   SendingStrategy
-    Recipients [][]byte
-    ReplyTo    mail.Address
-    Body       []byte
-    Headers    map[string][]byte
+	Sender     mail.Address
+	Strategy   SendingStrategy
+	Recipients [][]byte
+	ReplyTo    mail.Address
+	Body       []byte
+	Headers    map[string][]byte
+	Result     ZipwhipResponse
 }
 
 func NewSendRequest() *SendRequest {
@@ -49,23 +50,23 @@ func (sr *SendRequest) AddBody(body []byte) error {
 
 func (sr *SendRequest) AddHeaders(headers []byte) error {
 
-    const (
-        KEY = 0
-        VALUE = 1
-    )
+	const (
+		KEY   = 0
+		VALUE = 1
+	)
 
-    headers = bytes.TrimSpace(headers)
+	headers = bytes.TrimSpace(headers)
 
-    headerArray := bytes.Split(headers, []byte("\n"))
+	headerArray := bytes.Split(headers, []byte("\n"))
 
-    sr.Headers = make(map[string][]byte, len(headerArray))
+	sr.Headers = make(map[string][]byte, len(headerArray))
 
-    for i := 0; i < len(headerArray); i++ {
-        header := bytes.SplitN(headerArray[i], []byte(":"), 2)
-        if len(header[VALUE]) > 0 {
-            sr.Headers[string(bytes.ToLower(header[KEY]))] = bytes.TrimSpace(header[VALUE])
-        }
-    }
+	for i := 0; i < len(headerArray); i++ {
+		header := bytes.SplitN(headerArray[i], []byte(":"), 2)
+		if len(header[VALUE]) > 0 {
+			sr.Headers[string(bytes.ToLower(header[KEY]))] = bytes.TrimSpace(header[VALUE])
+		}
+	}
 
-    return nil
+	return nil
 }

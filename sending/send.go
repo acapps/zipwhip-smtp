@@ -2,10 +2,11 @@ package sending
 
 import (
 	"fmt"
-	"github.com/acapps/smtp-test/server/request"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
+
+	"github.com/acapps/zipwhip-smtp/request"
+	log "github.com/sirupsen/logrus"
 )
 
 func SessionKey(request request.SendRequest) {
@@ -33,3 +34,13 @@ func VendorKey(request request.SendRequest) {
 		}
 	}
 }
+
+/*
+
+body, err := ioutil.ReadAll(r.Body)
+if err != nil {
+log.Printf("An error occurred while reading in the Request's Body:\n\t%s", err)
+}
+go bodyToMessage(&body)
+
+*/
