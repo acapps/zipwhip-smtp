@@ -12,7 +12,7 @@ import (
 func SessionKey(request request.SendRequest) {
 
 	for i := 0; i < len(request.Recipients); i++ {
-		getRequest := fmt.Sprintf("https://api.zipwhip.com/message/send?session=%s&destinationAddress=%s&body=%s", request.Key, request.Recipients[i], url.QueryEscape(string(request.Body)))
+		getRequest := fmt.Sprintf("https://api.zipwhip.com/message/send?session=%s&contacts=%s&body=%s", request.Key, request.Recipients[i], url.QueryEscape(string(request.Body)))
 		go log.Debugln(getRequest)
 
 		_, err := http.Get(getRequest)
