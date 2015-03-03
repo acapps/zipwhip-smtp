@@ -7,7 +7,7 @@ import (
 
 	"github.com/acapps/zipwhip-smtp/request"
 	log "github.com/sirupsen/logrus"
-)
+    "bytes")
 
 func SessionKey(request request.SendRequest) {
 
@@ -24,8 +24,11 @@ func SessionKey(request request.SendRequest) {
 
 func VendorKey(request request.SendRequest) {
 
+    // TODO: Current defect in Zipwhip does not allow Source Address to be E.164.
+    request.Sender.Sender = bytes.TrimPrefix(request.Sender.Sender, []byte("+1"))
+
 	for i := 0; i < len(request.Recipients); i++ {
-		getRequest := fmt.Sprintf("https://vendor.zipwhip.com/message/send?vendorKey=%s&sourceAddress=%s&destinationAddress=%s&body=%s", request.Key, url.QueryEscape(request.Sender.Address), request.Recipients[i], url.QueryEscape(string(request.Body)))
+		getRequest := fmt.Sprintf("https://vendor.zipwhip.com/message/send?vendorKey=%s&sourceAddress=%s&destinationAddress=%s&body=%s", request.Key, url.QueryEscape(string(request.Sender.Sender)), request.Recipients[i], url.QueryEscape(string(request.Body)))
 		go log.Debugln(getRequest)
 
 		_, err := http.Get(getRequest)
