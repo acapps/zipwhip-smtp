@@ -163,17 +163,10 @@ func parseMessage(body []byte, sendRequest *request.SendRequest) error {
 		return err
 	}
 
-	/*
-	   err = validateRequestEssentials(*sendRequest)
-	   if err != nil {
-	       go log.Warnf("Error occurred while validating the RequestEssentials: %s", err)
-	       return err
-	   }*/
-
-	return nil
-}
-
-func validateRequestEssentials(sendRequest request.SendRequest) error {
+    err = parsing.SendingStrategy(sendRequest)
+    if err != nil {
+        return fmt.Errorf("Unable to determine sendingStrategy: %s", err)
+    }
 
 	return nil
 }
