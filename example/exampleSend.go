@@ -26,10 +26,11 @@ func main() {
 		smtpServer,
 	)
 
-	from := mail.Address{"Desk", "4257772300@zipwhip.com"}
-	to := mail.Address{"Cell", "+12068597896@zipwhip.com"}
+	from := mail.Address{"", "+14257772300@smtp.zipwhip.com"}
+	to := mail.Address{"Cell", "+12068597896@smtp.zipwhip.com"}
 
-	title := "8ef1211f-d9f2-4c81-906f-7d27da5a32f8:309626613"
+	//title := "8ef1211f-d9f2-4c81-906f-7d27da5a32f8:309626613"
+    title := "+14257772300@smtp.ziphip.com"
 	body := "Hello World\n\nHow are you today?\n\nGood Thanks!"
 
 	header := make(map[string]string)
