@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/acapps/zipwhip-smtp/request"
+    "github.com/acapps/zipwhip-smtp/address"
 )
 
 const (
@@ -21,45 +22,56 @@ const (
 
 type parseFunc func([]byte, *request.SendRequest) error
 
-var ZipwhipAuthParseTable = map[string]parseFunc{
-	ZIPWHIP_AUTH: zipwhipAuth,
-}
-
-var FallbackAuthParseTable = map[string]parseFunc{
-	SUBJECT: subject,
-}
+//var ZipwhipAuthParseTable = map[string]parseFunc{
+//	ZIPWHIP_AUTH: zipwhipAuth,
+//}
+//
+//var FallbackAuthParseTable = map[string]parseFunc{
+//	SUBJECT: subject,
+//}
 
 var DefaultParseTable = map[string]parseFunc{
 	REPLY_TO: replyTo,
 	FROM:     from,
 }
 
-const SESSION_FORMAT = "^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}:[0-9]"
+const (
+    SESSION_FORMAT = "^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}:[0-9]"
+    SUBJECT_VENDOR_FORMAT = `[a-zA-Z0-9]{1,}::\+[0-9]{11}@smtp.zipwhip.com`
+    EMAIL_FORMAT = `\+[0-9]{11}@smtp.zipwhip.com`
+)
 
-var SESSION_MATCHER *regexp.Regexp
+var (
+    SESSION_MATCHER *regexp.Regexp
+    SUBJECT_VENDOR_MATCHER *regexp.Regexp
+    EMAIL_MATCHER *regexp.Regexp
+)
+
 
 func init() {
 	SESSION_MATCHER = regexp.MustCompile(SESSION_FORMAT)
+    SUBJECT_VENDOR_MATCHER = regexp.MustCompile(SUBJECT_VENDOR_FORMAT)
+    EMAIL_MATCHER = regexp.MustCompile(EMAIL_FORMAT)
 }
 
 func Headers(sendRequest *request.SendRequest) error {
 
+    for key, value := range sendRequest.Headers {
+
+        if _, ok := DefaultParseTable[key]; ok {
+
+            var parseFunction parseFunc = DefaultParseTable[key]
+
+            err := parseFunction(value, sendRequest)
+            if err != nil {
+                return err
+            }
+        }
+    }
+
 	err := authentication(sendRequest)
 	if err != nil {
 		return fmt.Errorf("Authentication failed: %s", err)
-	}
-
-	for key, value := range sendRequest.Headers {
-
-		if _, ok := DefaultParseTable[key]; ok {
-
-			var parseFunction parseFunc = DefaultParseTable[key]
-
-			err := parseFunction(value, sendRequest)
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	return nil
@@ -85,34 +97,98 @@ func Recipients(recipients []string, sendRequest *request.SendRequest) error {
 	return nil
 }
 
+func SendingStrategy(sendRequest *request.SendRequest) error {
+
+    if SESSION_MATCHER.Match(sendRequest.Key) {
+        sendRequest.Strategy = request.SESSION
+        return nil
+    }
+
+    if len(sendRequest.Key) > 0 {
+        sendRequest.Strategy = request.VENDOR
+        return nil
+    }
+
+    return fmt.Errorf("No sending strategy could be detected. %s", sendRequest.Key)
+}
+
+// Authentication is defined by meeting the following criteria
+// A. Zipwhip-Auth populated VendorKey and From Address set to a valid Email, phoneNumber@smtp.zipwhip.com
+// B. Zipwhip-Auth populated VendorKey and Subject set to a valid Email, phoneNumber@smtp.zipwhip.com
+// C. Zipwhip Auth populated SessionKey
+// D. Subject populated with VendorKey and From Address set to a valid Email, phoneNumber@smtp.zipwhip.com
+// E. Subject populated with SessionKey
 func authentication(sendRequest *request.SendRequest) error {
 
-	if _, ok := sendRequest.Headers[ZIPWHIP_AUTH]; ok {
+    if _, ok := sendRequest.Headers[ZIPWHIP_AUTH]; ok {
 
-		var parseFunction parseFunc = ZipwhipAuthParseTable[ZIPWHIP_AUTH]
+        sendRequest.Key = sendRequest.Headers[ZIPWHIP_AUTH]
 
-		err := parseFunction(sendRequest.Headers[ZIPWHIP_AUTH], sendRequest)
-		if err != nil {
-			return err
-		}
-	} else if _, ok = sendRequest.Headers[SUBJECT]; ok {
+        err := authenticationZipwhipAuth(sendRequest)
+        if err != nil {
+            return fmt.Errorf("An error occurred while runing authentication on ZipwhipAuth. %s", err)
+        }
 
-		var parseFunction parseFunc = FallbackAuthParseTable[SUBJECT]
+        return nil
+    }
 
-		err := parseFunction(sendRequest.Headers[SUBJECT], sendRequest)
-		if err != nil {
-			return err
-		}
-	} else {
-		return fmt.Errorf("No authorization mechanism found. %+s", sendRequest.Headers)
+    if _, ok := sendRequest.Headers[SUBJECT]; ok {
+
+        sendRequest.Key = sendRequest.Headers[SUBJECT]
+
+        err := authenticationSubject(sendRequest)
+        if err != nil {
+            return fmt.Errorf("An error occurred while runing authentication on Subject. %s", err)
+        }
+
+        return nil
 	}
 
-	err := sendingStrategy(sendRequest)
-	if err != nil {
-		return fmt.Errorf("authenication failed due to error determining sending strategy. %s", err)
-	}
+    return fmt.Errorf("No authorization mechanism found. %+s", sendRequest.Headers)
+}
 
-	return nil
+func authenticationZipwhipAuth(sendRequest *request.SendRequest) error {
+
+    // C.
+    if SESSION_MATCHER.Match(sendRequest.Headers[ZIPWHIP_AUTH]) {
+
+        sendRequest.Strategy = request.SESSION
+        return nil
+    }
+
+    _, from := sendRequest.Headers[FROM]
+    _, subject := sendRequest.Headers[SUBJECT]
+
+    if !from && !subject {
+        return fmt.Errorf("Unable to locate appropriate Sender in from or subject.")
+    }
+
+    sendRequest.Strategy = request.VENDOR
+    var HeaderToParse []byte
+
+    if from {
+        HeaderToParse = sendRequest.Headers[FROM]
+    } else {
+        HeaderToParse = sendRequest.Headers[SUBJECT]
+    }
+
+    if EMAIL_MATCHER.Match(HeaderToParse) {
+
+        err := sendRequest.Sender.Parse(HeaderToParse)
+        if err != nil {
+
+            return fmt.Errorf("An error occurred while parsing the From Address: %s", err)
+        }
+        return nil
+    }
+
+    return address.IsValidZipwhipAddress(HeaderToParse)
+}
+
+func authenticationSubject(sendRequest *request.SendRequest) error {
+
+
+    return nil
 }
 
 func subject(subjectLine []byte, sendRequest *request.SendRequest) error {
@@ -122,27 +198,6 @@ func subject(subjectLine []byte, sendRequest *request.SendRequest) error {
 	sendRequest.Key = subjectLine
 
 	return nil
-}
-
-func zipwhipAuth(vendorKey []byte, sendRequest *request.SendRequest) error {
-
-	sendRequest.Key = vendorKey
-
-	return nil
-}
-
-func sendingStrategy(sendRequest *request.SendRequest) error {
-
-	if SESSION_MATCHER.Match(sendRequest.Key) {
-		sendRequest.Strategy = request.SESSION
-		return nil
-	}
-	if len(sendRequest.Key) > 0 {
-		sendRequest.Strategy = request.VENDOR
-		return nil
-	}
-
-	return fmt.Errorf("No sending strategy could be detected. %s", sendRequest.Key)
 }
 
 func replyTo(replyHeader []byte, sendRequest *request.SendRequest) error {
@@ -160,15 +215,8 @@ func replyTo(replyHeader []byte, sendRequest *request.SendRequest) error {
 
 func from(fromHeader []byte, sendRequest *request.SendRequest) error {
 
-	nameAddress := bytes.Replace(fromHeader, []byte("\""), []byte(""), -1)
+    fromHeader = bytes.Trim(fromHeader, " <>")
+    sendRequest.Headers[FROM] = fromHeader
 
-	address, err := mail.ParseAddress(string(nameAddress))
-	if err != nil {
-		return fmt.Errorf("Error parsing Address: %s because of error: %s", address, err)
-	}
-
-	address.Address = strings.Split(address.Address, "@")[0]
-
-	sendRequest.Sender = *address
 	return nil
 }
