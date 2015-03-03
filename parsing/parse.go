@@ -34,7 +34,7 @@ var DefaultParseTable = map[string]parseFunc{
 	FROM:     from,
 }
 
-const SESSION_FORMAT = "^[a-z0-9]{8}-[a-z0-9]{4}-[1-5][a-z0-9]{3}-[a-z0-9]{4}-[a-z0-9]{12}:[0-9]$"
+const SESSION_FORMAT = "^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}:[0-9]"
 
 var SESSION_MATCHER *regexp.Regexp
 
@@ -120,7 +120,6 @@ func subject(subjectLine []byte, sendRequest *request.SendRequest) error {
 	subjectLine = bytes.Replace(subjectLine, []byte("\""), []byte(""), -1)
 
 	sendRequest.Key = subjectLine
-	sendRequest.Strategy = request.VENDOR
 
 	return nil
 }
@@ -128,7 +127,6 @@ func subject(subjectLine []byte, sendRequest *request.SendRequest) error {
 func zipwhipAuth(vendorKey []byte, sendRequest *request.SendRequest) error {
 
 	sendRequest.Key = vendorKey
-	sendRequest.Strategy = request.VENDOR
 
 	return nil
 }

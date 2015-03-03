@@ -74,21 +74,18 @@ func (sr *SendRequest) AddHeaders(headers []byte) error {
 	)
 
 	headers = bytes.TrimSpace(headers)
-
 	headerArray := bytes.Split(headers, []byte("\n"))
 
 	sr.Headers = make(map[string][]byte, len(ParsingTable))
 
 	for i := 0; i < len(headerArray); i++ {
-		header := bytes.SplitN(headerArray[i], []byte(":"), 2)
+
+        header := bytes.SplitN(headerArray[i], []byte(":"), 2)
         header[KEY] = bytes.ToLower(header[KEY])
-        go log.Debugf("%s", header)
-        if _,ok := ParsingTable[string(header[KEY])]; !ok {
-            continue
+
+        if _,ok := ParsingTable[string(header[KEY])]; ok && len(header[VALUE]) > 0 {
+            sr.Headers[string(bytes.ToLower(header[KEY]))] = bytes.TrimSpace(header[VALUE])
         }
-		if len(header[VALUE]) > 0 {
-			sr.Headers[string(bytes.ToLower(header[KEY]))] = bytes.TrimSpace(header[VALUE])
-		}
 	}
 
 	return nil
