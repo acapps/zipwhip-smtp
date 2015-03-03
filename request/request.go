@@ -6,7 +6,7 @@ import (
 	"github.com/asaskevich/govalidator"
 	log "github.com/sirupsen/logrus"
 	"net/mail"
-)
+    "github.com/acapps/zipwhip-smtp/address")
 
 type SendingStrategy int
 
@@ -33,7 +33,7 @@ var ParsingTable = map[string]bool {
 
 type SendRequest struct {
 	Key        []byte
-	Sender     mail.Address
+	Sender     address.ZipwhipAddress
 	Strategy   SendingStrategy
 	Recipients [][]byte
 	ReplyTo    mail.Address
