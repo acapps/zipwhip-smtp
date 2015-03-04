@@ -56,7 +56,10 @@ func init() { // Init will run with unit Tests.
 
 	err := gcfg.ReadFileInto(&config, *configFile)
 	if err != nil {
-		log.Panicf("Could not read Config File.")
+		log.Debugf("Could not read Config File.")
+
+        config.Server.Address = "0.0.0.0"
+        config.Server.Port = "10025"
 	}
 
 	log.SetLevel(log.Level(config.Server.LogLevel))
