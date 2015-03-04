@@ -8,16 +8,16 @@ import (
 )
 
 const (
-	smtpdRecipients = "+18448982526@zipwhip.com"
+	smtpdRecipients = "+18448982526@smtp.zipwhip.com"
 )
 
 const (
 	VendorHeader        = "Zipwhip-Auth: vendorKey\n"
 	ComplexVendorHeader = "Zipwhip-Auth: 8ef1211f-d9f2-4c81-906f-7d27da5a32f8\n"
-	VendorSubjectHeader = "Subject: \"vendorKey\"\n"
+	VendorSubjectHeader = "Subject: \"vendorKey::+18448982526@smtp.zipwhip.com\"\n"
 	SessionHeader       = "Subject: \"8ef1211f-d9f2-4c81-906f-7d27da5a32f8:309626613\"\n"
 	ReplyToHeader       = "Reply-To: \"Alan\" <alan@zipwhip.com>\n"
-	FromHeader          = "Reply-To: \"Desk\" <+18448982526zipwhip.com>\n"
+	FromHeader          = "From: <+18448982526@smtp.zipwhip.com>\n"
 	BadVendorHeader     = "Zipwhip-Auth:\n"
 	BadSessionHeader    = "Subject:\n"
 )
@@ -33,16 +33,21 @@ const (
 
 func Test_AuthorizationVendor(t *testing.T) {
 
-	var Headers = buildHeader([]byte(VendorHeader))
+	var headers = buildHeader([]byte(VendorHeader), []byte(FromHeader))
 	sr := request.NewSendRequest()
 
 	Convey("Parse Headers to setup tests should not return error.", t, func() {
-		err := sr.AddHeaders(Headers)
+		err := sr.AddHeaders(headers)
 		So(err, ShouldBeNil)
 	})
 
+    Convey("Parse headers prior to Authorization", t, func() {
+        err := Headers(sr)
+        So(err, ShouldBeNil)
+    })
+
 	Convey("Parse headers through Authorization.", t, func() {
-		err := authentication(sr)
+		err := Authentication(sr)
 		So(err, ShouldBeNil)
 	})
 
@@ -53,16 +58,21 @@ func Test_AuthorizationVendor(t *testing.T) {
 
 func Test_AuthorizationVendorInSubject(t *testing.T) {
 
-	var Headers = buildHeader([]byte(VendorSubjectHeader))
+	var headers = buildHeader([]byte(VendorSubjectHeader))
 	sr := request.NewSendRequest()
 
 	Convey("Parse Headers to setup tests should not return error.", t, func() {
-		err := sr.AddHeaders(Headers)
+		err := sr.AddHeaders(headers)
 		So(err, ShouldBeNil)
 	})
 
+    Convey("Parse headers prior to Authorization", t, func() {
+        err := Headers(sr)
+        So(err, ShouldBeNil)
+    })
+
 	Convey("Parse headers through Authorization.", t, func() {
-		err := authentication(sr)
+		err := Authentication(sr)
 		So(err, ShouldBeNil)
 	})
 
@@ -73,16 +83,21 @@ func Test_AuthorizationVendorInSubject(t *testing.T) {
 
 func Test_AuthorizationSession(t *testing.T) {
 
-	var Headers = buildHeader([]byte(SessionHeader))
+	var headers = buildHeader([]byte(SessionHeader))
 	sr := request.NewSendRequest()
 
 	Convey("Parse Headers to setup tests should not return error.", t, func() {
-		err := sr.AddHeaders(Headers)
+		err := sr.AddHeaders(headers)
 		So(err, ShouldBeNil)
 	})
 
+    Convey("Parse headers prior to Authorization", t, func() {
+        err := Headers(sr)
+        So(err, ShouldBeNil)
+    })
+
 	Convey("Parse headers through Authorization.", t, func() {
-		err := authentication(sr)
+		err := Authentication(sr)
 		So(err, ShouldBeNil)
 	})
 
@@ -93,16 +108,21 @@ func Test_AuthorizationSession(t *testing.T) {
 
 func Test_AuthorizationComplexVendor(t *testing.T) {
 
-	var Headers = buildHeader([]byte(ComplexVendorHeader))
+	var headers = buildHeader([]byte(ComplexVendorHeader), []byte(FromHeader))
 	sr := request.NewSendRequest()
 
 	Convey("Parse Headers to setup tests should not return error.", t, func() {
-		err := sr.AddHeaders(Headers)
+		err := sr.AddHeaders(headers)
 		So(err, ShouldBeNil)
 	})
 
+    Convey("Parse headers prior to Authorization", t, func() {
+        err := Headers(sr)
+        So(err, ShouldBeNil)
+    })
+
 	Convey("Parse headers through Authorization.", t, func() {
-		err := authentication(sr)
+		err := Authentication(sr)
 		So(err, ShouldBeNil)
 	})
 
@@ -113,16 +133,21 @@ func Test_AuthorizationComplexVendor(t *testing.T) {
 
 func Test_AuthorizationFallback(t *testing.T) {
 
-	var Headers = buildHeader([]byte(BadVendorHeader), []byte(SessionHeader))
+	var headers = buildHeader([]byte(BadVendorHeader), []byte(SessionHeader))
 	sr := request.NewSendRequest()
 
 	Convey("Parse Headers to setup tests should not return error.", t, func() {
-		err := sr.AddHeaders(Headers)
+		err := sr.AddHeaders(headers)
 		So(err, ShouldBeNil)
 	})
 
+    Convey("Parse headers prior to Authorization", t, func() {
+        err := Headers(sr)
+        So(err, ShouldBeNil)
+    })
+
 	Convey("Parse headers through Authorization.", t, func() {
-		err := authentication(sr)
+		err := Authentication(sr)
 		So(err, ShouldBeNil)
 	})
 
@@ -133,16 +158,21 @@ func Test_AuthorizationFallback(t *testing.T) {
 
 func Test_AuthorizationFailure(t *testing.T) {
 
-	var Headers = buildHeader([]byte(BadVendorHeader), []byte(BadSessionHeader))
+	var headers = buildHeader([]byte(BadVendorHeader), []byte(BadSessionHeader))
 	sr := request.NewSendRequest()
 
 	Convey("Parse Headers to setup tests should not return error.", t, func() {
-		err := sr.AddHeaders(Headers)
+		err := sr.AddHeaders(headers)
 		So(err, ShouldBeNil)
 	})
 
+    Convey("Parse headers prior to Authorization", t, func() {
+        err := Headers(sr)
+        So(err, ShouldBeNil)
+    })
+
 	Convey("Parse headers through Authorization.", t, func() {
-		err := authentication(sr)
+		err := Authentication(sr)
 		So(err, ShouldNotBeNil)
 	})
 }
@@ -156,6 +186,11 @@ func Test_HeaderParsing(t *testing.T) {
 		err := sr.AddHeaders(headers)
 		So(err, ShouldBeNil)
 	})
+
+    Convey("Parse headers prior to Authorization", t, func() {
+        err := Headers(sr)
+        So(err, ShouldBeNil)
+    })
 
 	Convey("Parse headers through parser's Header.", t, func() {
 		err := Headers(sr)
@@ -177,13 +212,18 @@ func Test_RecipientParsing(t *testing.T) {
 
 func Test_ReplyTo(t *testing.T) {
 
-	var Headers = buildHeader([]byte(ReplyToHeader))
+	var headers = buildHeader([]byte(ReplyToHeader))
 	sr := request.NewSendRequest()
 
 	Convey("Parse Headers to setup tests should not return error.", t, func() {
-		err := sr.AddHeaders(Headers)
+		err := sr.AddHeaders(headers)
 		So(err, ShouldBeNil)
 	})
+
+    Convey("Parse headers prior to Authorization", t, func() {
+        err := Headers(sr)
+        So(err, ShouldBeNil)
+    })
 
 	Convey("Parse the ReplyTo Header, parsing should not return an error.", t, func() {
 		err := replyTo(sr.Headers["reply-to"], sr)
