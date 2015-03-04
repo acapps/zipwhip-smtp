@@ -29,15 +29,15 @@ func main() {
 	from := mail.Address{"", "+14257772300@smtp.zipwhip.com"}
 	to := mail.Address{"Cell", "+12068597896@smtp.zipwhip.com"}
 
-	//title := "8ef1211f-d9f2-4c81-906f-7d27da5a32f8:309626613"
-    title := "+14257772300@smtp.ziphip.com"
+	title := "8ef1211f-d9f2-4c81-906f-7d27da5a32f8:309626613"
+//    title := "asdfasdf::+14257772300@smtp.zipwhip.com"
 	body := "Hello World\n\nHow are you today?\n\nGood Thanks!"
 
 	header := make(map[string]string)
 	header["From"] = from.String()
 	header["To"] = to.String()
 	header["Subject"] = encodeRFC2047(title)
-	header["Zipwhip-Auth"] = "asdfasdf"
+	//header["Zipwhip-Auth"] = "asdfasdf"
 
 	message := ""
 	for k, v := range header {
