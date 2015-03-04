@@ -60,6 +60,7 @@ func init() { // Init will run with unit Tests.
 
         config.Server.Address = "0.0.0.0"
         config.Server.Port = "10025"
+        config.Server.LogLevel = 5
 	}
 
 	log.SetLevel(log.Level(config.Server.LogLevel))
