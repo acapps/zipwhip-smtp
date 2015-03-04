@@ -14,18 +14,18 @@ const (
     DIGIT_SHORT = "+1844898252@smtp.zipwhip.com"
 )
 
-var Addresses map[string]bool
+var Addresses map[string]string
 
 func setup() {
-    Addresses = make(map[string]bool)
+    Addresses = make(map[string]string)
 
-    Addresses[VALID] = true
-    Addresses[VARIED_CASE] = true
+    Addresses[VALID] = "+18448982526"
+    Addresses[VARIED_CASE] = "+18448982526"
 
-    Addresses[BAD_HOST] = false
-    Addresses[MISSING_PLUS] = false
-    Addresses[MISSING_ONE] = false
-    Addresses[DIGIT_SHORT] = false
+    Addresses[BAD_HOST] = "bad"
+    Addresses[MISSING_PLUS] = "bad"
+    Addresses[MISSING_ONE] = "bad"
+    Addresses[DIGIT_SHORT] = "bad"
 }
 
 func Test_extractSender(t *testing.T) {
@@ -36,16 +36,21 @@ func Test_extractSender(t *testing.T) {
 
         for k,v := range Addresses {
 
-            _, err := extractSender([]byte(k))
+            err := IsValidZipwhipAddress([]byte(k))
             if err != nil {
+
                 Convey(fmt.Sprintf("This Address, %s, should be invalid", k), func() {
-                    So(v, ShouldBeFalse)
+                    So(v, ShouldEqual, "bad")
                 })
-                continue
+
+            } else {
+
+                Convey(fmt.Sprintf("This Address, %s, should be valid", k), func() {
+                    result, err := extractSender([]byte(k))
+                    So(err, ShouldBeNil)
+                    So(string(result), ShouldEqual, v)
+                })
             }
-            Convey(fmt.Sprintf("This Address, %s, should be valid", k), func() {
-                So(v, ShouldBeTrue)
-            })
         }
     })
 }
@@ -61,12 +66,12 @@ func Test_IsValidZipwhipAddress(t *testing.T) {
             err := IsValidZipwhipAddress([]byte(k))
             if err != nil {
                 Convey(fmt.Sprintf("This Address, %s, should be invalid", k), func() {
-                    So(v, ShouldBeFalse)
+                    So(v, ShouldEqual, "bad")
                 })
                 continue
             }
             Convey(fmt.Sprintf("This Address, %s, should be valid", k), func() {
-                So(v, ShouldBeTrue)
+                So(err, ShouldBeNil)
             })
         }
     })

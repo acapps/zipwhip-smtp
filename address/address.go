@@ -13,8 +13,8 @@ type ZipwhipAddress struct {
 }
 
 const (
-	EMAIL_FORMAT = `\+1[0-9]{10}@smtp.zipwhip.com`
-	PHONE_FORMAT = `\+1[0-9]{10}`
+	EMAIL_FORMAT = `^\+1[0-9]{10}@smtp.zipwhip.com$`
+	PHONE_FORMAT = `^\+1[0-9]{10}$`
 )
 
 var (
@@ -34,19 +34,21 @@ func NewZipwhipAddress() *ZipwhipAddress {
 
 func IsValidZipwhipAddress(emailAddress []byte) error {
 
+    // Leverage, the email package for parsing.
+    var email *mail.Address
     emailAddress = bytes.ToLower(emailAddress)
-	if EMAIL_MATCHER.Match(emailAddress) {
+
+    email, err := mail.ParseAddress(string(emailAddress))
+    if err != nil {
+        return fmt.Errorf("Error parsing emailAddress. %s", err)
+    }
+
+	if EMAIL_MATCHER.Match([]byte(email.Address)) {
 
 		return nil
 	}
 
-	sender, err := extractSender(emailAddress)
-	if err != nil {
-
-		fmt.Errorf("Phone number portion was invalid, %s", sender)
-	}
-
-	return fmt.Errorf("Host portion of email address was invalid.")
+    return fmt.Errorf("Email address was not in the proper format. %s", email.Address)
 }
 
 func extractSender(emailAddress []byte) ([]byte, error) {
@@ -55,17 +57,13 @@ func extractSender(emailAddress []byte) ([]byte, error) {
 		PHONE_NUMBER = iota
 	)
 
-    if !EMAIL_MATCHER.Match(bytes.ToLower(emailAddress)) {
-        return nil, fmt.Errorf("Email address is invalid.")
-    }
-
 	addressParts := bytes.Split(emailAddress, []byte("@"))
 	if PHONE_MATCHER.Match(addressParts[PHONE_NUMBER]) {
 
 		return []byte(addressParts[PHONE_NUMBER]), nil
 	}
 
-	return addressParts[PHONE_NUMBER], fmt.Errorf("Invalid phone number format")
+	return nil, fmt.Errorf("Invalid phone number format")
 }
 
 func (za *ZipwhipAddress) Parse(emailAddress []byte) error {
@@ -75,8 +73,6 @@ func (za *ZipwhipAddress) Parse(emailAddress []byte) error {
 
 		return fmt.Errorf("Parse failed due to: %s", err)
 	}
-
-	za.Address.Address = string(emailAddress)
 
 	sender, err := extractSender(emailAddress)
 	if err != nil {
