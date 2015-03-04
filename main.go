@@ -89,7 +89,7 @@ func main() {
 		Handler: func(peer smtpd.Peer, env smtpd.Envelope) error {
 
 			go log.Debugf("New connection: %+s, %+s", peer, env)
-			parseRequest(peer, env)
+			go parseRequest(peer, env)
 			return nil
 		},
 	}
@@ -121,13 +121,17 @@ func parseRequest(peer smtpd.Peer, env smtpd.Envelope) {
 
 	err := parseMessage(env.Data, request)
 	if err != nil {
+        go log.Debugf("Error parsing message: %s", err)
 		return
 	}
 
 	err = parsing.Recipients(env.Recipients, request)
 	if err != nil {
+        go log.Debugf("Error parsing recipients: %s", err)
 		return
 	}
+
+    go log.Debugf("%+s", request)
 
 	sendMessages(request)
 }
@@ -162,6 +166,11 @@ func parseMessage(body []byte, sendRequest *request.SendRequest) error {
 		go log.Warnf("Error occurred while parsing the header: %s", err)
 		return err
 	}
+
+    err = parsing.Authentication(sendRequest)
+    if err != nil {
+        return fmt.Errorf("Authentication failed: %s", err)
+    }
 
     err = parsing.SendingStrategy(sendRequest)
     if err != nil {
